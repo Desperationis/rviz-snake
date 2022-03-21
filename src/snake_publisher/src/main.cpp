@@ -80,16 +80,18 @@ public:
 				Cube cube;
 				switch(type) {
 				case EMPTY:
+					cube.SetPos(i + worldXOffset, j + worldYOffset, 0); 
 					break;
 				case SNAKE:
+					cube.SetPos(i + worldXOffset, j + worldYOffset, 1); 
 					cube.SetColor(0, 1, 0, 1);
 					break;
 				case FRUIT:
+					cube.SetPos(i + worldXOffset, j + worldYOffset, 1); 
 					cube.SetColor(1, 0, 0, 1);
 					break;
 				};
 
-				cube.SetPos(i + worldXOffset, j + worldYOffset, 0); 
 				grid.AddCube(cube);
 			}
 		}
