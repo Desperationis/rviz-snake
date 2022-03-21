@@ -16,6 +16,7 @@ find_package(visualization_msgs REQUIRED)
 
 add_executable(publisher src/main.cpp)
 ament_target_dependencies(publisher rclcpp visualization_msgs)
+target_include_directories(publisher PRIVATE include/)
 
 install(TARGETS publisher DESTINATION lib/${PROJECT_NAME})
 
