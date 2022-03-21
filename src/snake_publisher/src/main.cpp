@@ -124,23 +124,38 @@ class GameNode : public rclcpp::Node {
 public:
 	GameNode(std::shared_ptr<MarkerPublisher> publisher) : Node("game_runner"), snake(5,5) {
 		snake.SetDirection(Snake::RIGHT);
-		this->timer = this->create_wall_timer(1000ms, std::bind(&GameNode::Loop, this));
+		this->renderTimer = this->create_wall_timer(80ms, std::bind(&GameNode::Loop, this));
+		this->inputTimer = this->create_wall_timer(10ms, std::bind(&GameNode::UserInput, this));
 		this->publisher = publisher;
 	}
 
 	void Loop() {
 		SnakeGrid grid(15);
+		snake.Update();
 		for(auto body : snake.GetBody()) {
 			grid.ReserveSnake(body.x, body.y);
 		}
 
-		snake.Update();
 		grid.Draw(publisher);
+	}
+
+	void UserInput() {
+		int c = getch();
+		if (c != -1) {
+			if(c == 'w')
+				snake.SetDirection(Snake::UP);
+			if(c == 'a')
+				snake.SetDirection(Snake::LEFT);
+			if(c == 's')
+				snake.SetDirection(Snake::DOWN);
+			if(c == 'd')
+				snake.SetDirection(Snake::RIGHT);
+		}
 	}
 
 private:
 	Snake snake;
-	rclcpp::TimerBase::SharedPtr timer;
+	rclcpp::TimerBase::SharedPtr renderTimer, inputTimer;
 	std::shared_ptr<MarkerPublisher> publisher;
 };
 
@@ -166,20 +181,14 @@ int main(int argc, char** argv) {
 	cbreak();
 	clear();
 
-	printw("Hello wordl!!!");
+	printw("Press WASD to control the snake.");
 	refresh();
-	while(true) {
-		int c = getch();
-		if(c == 'q')
-			break;
-		std::this_thread::sleep_for(std::chrono::milliseconds(30));
-	}
-	endwin();
 
 	auto executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
 	executor->add_node(node);
 	executor->add_node(game);
 	executor->spin();
 
+	endwin();
 	rclcpp::shutdown();
 }
