@@ -20,12 +20,12 @@ using namespace std::chrono_literals;
  * right, y-axis is positive downwards, and grid positions are forced to snap.
 */ 
 class SnakeGrid {
+public:
+	enum GRID_PIECES {EMPTY, SNAKE, FRUIT};
 private:
 	int sideLength;
 	int worldXOffset, worldYOffset;
-	enum GRID_PIECES {EMPTY, SNAKE, FRUIT};
 	std::vector<std::vector<GRID_PIECES>> gridElements;
-
 public:
 	SnakeGrid(int sideLength) {
 		this->sideLength = sideLength;
@@ -61,6 +61,10 @@ public:
 		}
 	}
 
+	GRID_PIECES GetReserved(int x, int y) {
+		return gridElements[y][x];
+	}
+
 	/**
 	 * Returns the side length of the grid.
 	*/ 
@@ -92,6 +96,14 @@ public:
 
 		publisher->PublishMarker(grid);
 	}
+
+	void Clear() {
+		for(int i = 0; i < sideLength; i++) {
+			for(int j = 0; j < sideLength; j++) {
+				gridElements[i][j] = EMPTY;
+			}
+		}
+	}
 };
 
 struct Fruit {
@@ -101,6 +113,51 @@ struct Fruit {
 	}
 
 	geometry_msgs::msg::Point p;
+};
+
+class FruitManager {
+public:
+	FruitManager() {}
+
+	/**
+	 * Randomly spawn a single fruit that is not occupied.
+	*/ 
+	void SpawnFruit(SnakeGrid snakeGrid) {
+		while(true) {
+			int x = rand() % snakeGrid.GetSideLength();
+			int y = rand() % snakeGrid.GetSideLength();
+
+			if(snakeGrid.GetReserved(x, y) == SnakeGrid::EMPTY) {
+				fruits.push_back(Fruit(x, y));
+				break;
+			}
+		}
+	}
+
+	/**
+	 * Try to eat a fruit at a specific point. If there is not fruit at that
+	 * point, return false. If there is, return true and erase the fruit from
+	 * existence.
+	*/ 
+	bool Eat(int x, int y) { 
+		for(size_t i = 0; i < fruits.size(); i++) {
+			auto fruit = fruits[i];
+			if(fruit.p.x == x && fruit.p.y == y) {
+				fruits.erase(fruits.begin() + i);
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	std::vector<Fruit> GetFruits() {
+		return fruits;
+	}
+
+
+private:
+	std::vector<Fruit> fruits;
 };
 
 class Snake {
@@ -115,7 +172,7 @@ public:
 		return body;
 	}
 
-	void Update(SnakeGrid& snakeGrid, std::vector<Fruit>& fruits) {
+	void Update(SnakeGrid& snakeGrid, FruitManager& fruitManager) {
 		if(!dead) {
 			geometry_msgs::msg::Point nextPoint;
 			nextPoint = body.front();
@@ -139,18 +196,13 @@ public:
 			if(!dead) {
 				body.push_front(nextPoint);
 
-				bool onFruit = false;
-				for(size_t i = 0; i < fruits.size(); i++) {
-					auto fruit = fruits[i];
-					if(fruit.p.x == nextPoint.x && fruit.p.y == nextPoint.y) {
-						onFruit = true;
-						fruits.erase(fruits.begin() + i);
-						break;
-					}
-				}
+				bool fruitEaten = fruitManager.Eat(nextPoint.x, nextPoint.y);
 
-				if(!onFruit) {
+				if(!fruitEaten) {
 					body.pop_back();
+				}
+				else {
+					fruitManager.SpawnFruit(snakeGrid);
 				}
 			}
 		}
@@ -160,13 +212,26 @@ public:
 		currentDirection = dir;
 	}
 
+	DIRECTION GetDirection() {
+		return currentDirection;
+	}
+
 	bool IsDead() {
 		return dead;
 	}
 
 	bool WillDie(int x, int y, SnakeGrid& snakeGrid) {
 		// TODO; Check bounds && self-intersection
-		return !snakeGrid.InBounds(x, y);
+		if(!snakeGrid.InBounds(x, y)) 
+			return true;
+
+		for(auto point : body) {
+			if (point.x == x && point.y == y) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	void Respawn(int x, int y) {
@@ -190,48 +255,50 @@ private:
 
 class GameNode : public rclcpp::Node {
 public:
-	GameNode(std::shared_ptr<MarkerPublisher> publisher) : Node("game_runner"), snake(5,5) {
+	GameNode(std::shared_ptr<MarkerPublisher> publisher) : Node("game_runner"), snake(5,5), snakeGrid(15) {
 		snake.SetDirection(Snake::RIGHT);
 		this->renderTimer = this->create_wall_timer(80ms, std::bind(&GameNode::Loop, this));
 		this->inputTimer = this->create_wall_timer(10ms, std::bind(&GameNode::UserInput, this));
 		this->publisher = publisher;
 
-		fruits.push_back(Fruit(1,1));
+		fruitManager.SpawnFruit(snakeGrid);
 	}
 
 	void Loop() {
-		SnakeGrid grid(15);
-		snake.Update(grid, fruits);
+		snake.Update(snakeGrid, fruitManager);
 		for(auto body : snake.GetBody()) {
-			grid.ReserveSnake(body.x, body.y);
+			snakeGrid.ReserveSnake(body.x, body.y);
 		}
 
-		for(auto fruit : fruits) {
-			grid.ReserveFruit(fruit.p.x, fruit.p.y);
+		for(auto fruit : fruitManager.GetFruits()) {
+			snakeGrid.ReserveFruit(fruit.p.x, fruit.p.y);
 		}
 
-		grid.Draw(publisher);
+		snakeGrid.Draw(publisher);
+		snakeGrid.Clear();
 	}
 
 	void UserInput() {
 		int c = getch();
+		auto currentDirection = snake.GetDirection();
 		if (c != -1) {
-			if(c == 'w')
+			if(c == 'w' && currentDirection != Snake::DOWN)
 				snake.SetDirection(Snake::UP);
-			if(c == 'a')
+			if(c == 'a' && currentDirection != Snake::RIGHT)
 				snake.SetDirection(Snake::LEFT);
-			if(c == 's')
+			if(c == 's' && currentDirection != Snake::UP)
 				snake.SetDirection(Snake::DOWN);
-			if(c == 'd')
+			if(c == 'd' && currentDirection != Snake::LEFT)
 				snake.SetDirection(Snake::RIGHT);
 		}
 	}
 
 private:
 	Snake snake;
+	SnakeGrid snakeGrid;
 	rclcpp::TimerBase::SharedPtr renderTimer, inputTimer;
 	std::shared_ptr<MarkerPublisher> publisher;
-	std::vector<Fruit> fruits;
+	FruitManager fruitManager;
 };
 
 void TermCleanUp(int signum) {
