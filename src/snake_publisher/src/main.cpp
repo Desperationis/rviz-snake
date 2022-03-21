@@ -27,9 +27,9 @@ struct Cube {
 	std_msgs::msg::ColorRGBA color;
 };
 
-class Grid : public visualization_msgs::msg::Marker {
+class GridMarker : public visualization_msgs::msg::Marker {
 public:
-	Grid() {
+	GridMarker() {
 		type = visualization_msgs::msg::Marker::CUBE_LIST;
 		pose.position.x = 0;
 		pose.position.y = 0;
@@ -80,13 +80,18 @@ private:
 int main(int argc, char** argv) {
 	rclcpp::init(argc, argv);
 	auto node = std::make_shared<MarkerPublisher>();
-	Grid grid;
+	GridMarker grid;
 
-	Cube cube;
-	cube.SetPos(1,1,2);
-	cube.SetColor(1,1,1,1);
+	for(int i = -8; i <= 4; i++) {
+		for(int j = -4; j <= 8; j++) {
+			Cube cube;
+			cube.SetPos(i, j, 0);
+			float color = 1;
+			cube.SetColor(color,color,color,1);
 
-	grid.AddCube(cube);
+			grid.AddCube(cube);
+		}
+	}
 
 	node->PublishMarker(grid);
 
