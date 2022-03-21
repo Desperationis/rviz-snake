@@ -3,6 +3,7 @@
 #include <functional>
 #include <chrono>
 #include <vector>
+#include <ncurses.h>
 #include <list>
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/executor.hpp"
