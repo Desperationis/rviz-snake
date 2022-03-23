@@ -63,7 +63,6 @@ public:
 	 * Publish a marker with proper headers.
 	*/ 
 	void PublishMarker(visualization_msgs::msg::Marker marker) {
-		publisher->publish(markerArray);
 		marker.ns = "gameboard";
 		marker.id = 0;
 		marker.header.frame_id = "map";
@@ -74,5 +73,4 @@ public:
 
 private:
 	std::shared_ptr<rclcpp::Publisher<visualization_msgs::msg::Marker>> publisher;
-	visualization_msgs::msg::Marker markerArray;
 };
