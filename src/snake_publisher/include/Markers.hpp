@@ -1,9 +1,23 @@
+#ifndef MARKERS_HPP
+#define MARKERS_HPP
+
 #include <memory>
 #include "rclcpp/rclcpp.hpp"
 #include "visualization_msgs/msg/marker.hpp"
 #include "geometry_msgs/msg/point.hpp"
 #include "std_msgs/msg/color_rgba.hpp"
 
+/**
+ * Markers.hpp
+ *
+ * This file holds classes that relate to encapsulating ROS2 and rviz
+ * functionality into easy to use classes meant for grid rendering.
+*/ 
+
+
+/**
+ * Struct meant to easily allow you to modify a single cube in a CubeArray.
+*/ 
 struct Cube {
 	Cube() { 
 		SetPos(0,0,0);
@@ -16,6 +30,9 @@ struct Cube {
 		point.z = z;
 	}
 
+	/**
+	 * Sets the color of the cube. Each parameter must be from 0.0 - 1.0.
+	*/ 
 	void SetColor(float r, float g, float b, float a) {
 		color.r = r;
 		color.g = g;
@@ -27,6 +44,9 @@ struct Cube {
 	std_msgs::msg::ColorRGBA color;
 };
 
+/**
+ * Wrapper for a CubeArray that allows you to add cubes via the Cube struct.
+*/ 
 class GridMarker : public visualization_msgs::msg::Marker {
 public:
 	GridMarker() {
@@ -53,6 +73,9 @@ public:
 	}
 };
 
+/**
+ * Node solely meant to publish markers to rviz.
+*/ 
 class MarkerPublisher : public rclcpp::Node {
 public:
 	MarkerPublisher() : Node("marker_publisher") {
@@ -74,3 +97,5 @@ public:
 private:
 	std::shared_ptr<rclcpp::Publisher<visualization_msgs::msg::Marker>> publisher;
 };
+
+#endif
