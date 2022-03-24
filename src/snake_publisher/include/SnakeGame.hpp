@@ -112,16 +112,15 @@ public:
 			for(size_t j = 0; j < gridElements[i].size(); j++) {
 				GRID_PIECES type = gridElements[i][j];
 				Cube cube;
+				cube.SetPos(i + worldXOffset, j + worldYOffset, 1); 
 				switch(type) {
 				case EMPTY:
 					cube.SetPos(i + worldXOffset, j + worldYOffset, 0); 
 					break;
 				case SNAKE:
-					cube.SetPos(i + worldXOffset, j + worldYOffset, 1); 
 					cube.SetColor(0, 1, 0, 1);
 					break;
 				case FRUIT:
-					cube.SetPos(i + worldXOffset, j + worldYOffset, 1); 
 					cube.SetColor(1, 0, 0, 1);
 					break;
 				};
@@ -244,6 +243,7 @@ public:
 				nextPoint.y += 1;
 				break;
 			};
+			actualDirection = currentDirection;
 			
 			dead = WillDie(nextPoint.x, nextPoint.y, snakeGrid); // TODO; Pass in grid
 
@@ -268,6 +268,10 @@ public:
 
 	DIRECTION GetDirection() {
 		return currentDirection;
+	}
+
+	DIRECTION GetActualDirection() {
+		return actualDirection;
 	}
 
 	bool IsDead() {
@@ -310,6 +314,12 @@ private:
 	std::list<geometry_msgs::msg::Point> body;
 	bool dead;
 	DIRECTION currentDirection;
+
+	// User input and the game are asynchronous as run at different hertz, so
+	// this gives the direction the snake is headed based on the last frame so
+	// that the user doesn't circumnavigate the input-checking code to prevent
+	// crashing directly backwards.
+	DIRECTION actualDirection; 
 };
 
 
@@ -351,11 +361,8 @@ public:
 	*/ 
 	void UserInput() {
 		int c = getch();
-		auto currentDirection = snake.GetDirection();
+		auto currentDirection = snake.GetActualDirection();
 		if (c != -1) {
-			// TODO: Fix bug where mashing multiple inputs in one frame
-			// bypasses the "don't go backwards" rule and you die due to
-			// turning 180 degrees.
 			if(c == 'w' && currentDirection != Snake::DOWN)
 				snake.SetDirection(Snake::UP);
 			if(c == 'a' && currentDirection != Snake::RIGHT)
