@@ -24,6 +24,7 @@ void TermCleanUp(int signum) {
 
 int main(int argc, char** argv) {
 	std::signal(SIGINT, TermCleanUp);
+	srand(time(0));
 
 	rclcpp::init(argc, argv);
 	auto node = std::make_shared<MarkerPublisher>();

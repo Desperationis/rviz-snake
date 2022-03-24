@@ -158,7 +158,9 @@ struct Fruit {
 */ 
 class FruitManager {
 public:
-	FruitManager() {}
+	FruitManager() {
+		requestedFruit = 0;
+	}
 
 	/**
 	 * Randomly spawn a single fruit that is not occupied by a SNAKE tile.
@@ -166,15 +168,24 @@ public:
 	 * enough completely fill up the board.
 	*/ 
 	void SpawnFruit(SnakeGrid snakeGrid) {
-		while(true) {
+		while(requestedFruit > 0) {
 			int x = rand() % snakeGrid.GetSideLength();
 			int y = rand() % snakeGrid.GetSideLength();
 
 			if(snakeGrid.GetReserved(x, y) == SnakeGrid::EMPTY) {
 				fruits.push_back(Fruit(x, y));
-				break;
+				snakeGrid.ReserveFruit(x, y);
+				requestedFruit--;
 			}
 		}
+	}
+
+	/**
+	 * Request a single fruit to be drawn the next frame. Can be called
+	 * multiple times for multiple fruits.
+	*/ 
+	void RequestFruit() {
+		requestedFruit++;
 	}
 
 	/**
@@ -204,6 +215,10 @@ public:
 
 private:
 	std::vector<Fruit> fruits;
+
+	// This variable holds the amount of requested fruit that should be spawned
+	// on the next frame.
+	int requestedFruit;
 };
 
 /**
@@ -245,7 +260,7 @@ public:
 			};
 			actualDirection = currentDirection;
 			
-			dead = WillDie(nextPoint.x, nextPoint.y, snakeGrid); // TODO; Pass in grid
+			dead = WillDie(nextPoint.x, nextPoint.y, snakeGrid);
 
 			if(!dead) {
 				body.push_front(nextPoint);
@@ -256,7 +271,7 @@ public:
 					body.pop_back();
 				}
 				else {
-					fruitManager.SpawnFruit(snakeGrid);
+					fruitManager.RequestFruit();
 				}
 			}
 		}
@@ -336,6 +351,7 @@ public:
 		this->inputTimer = this->create_wall_timer(10ms, std::bind(&GameNode::UserInput, this));
 		this->publisher = publisher;
 
+		fruitManager.RequestFruit();
 		fruitManager.SpawnFruit(snakeGrid);
 	}
 
@@ -348,6 +364,7 @@ public:
 			snakeGrid.ReserveSnake(body.x, body.y);
 		}
 
+		fruitManager.SpawnFruit(snakeGrid);
 		for(auto fruit : fruitManager.GetFruits()) {
 			snakeGrid.ReserveFruit(fruit.p.x, fruit.p.y);
 		}
