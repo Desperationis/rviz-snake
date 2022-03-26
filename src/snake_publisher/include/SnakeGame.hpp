@@ -345,10 +345,28 @@ private:
  * asynchronously receives input from the terminal via ncurses.
 */ 
 class GameNode : public rclcpp::Node {
+private:
+	void OnGameFPSChange(const rclcpp::Parameter& p) {
+		SetGameFPS(p.as_int());
+	}
+
+	void SetGameFPS(int FPS) {
+		int millisecondsToDelay = static_cast<int>(1000.0 / FPS);
+		auto duration = std::chrono::duration<int, std::milli>(millisecondsToDelay);
+		this->renderTimer = this->create_wall_timer(duration, std::bind(&GameNode::Loop, this));
+	}
+
 public:
-	GameNode(std::shared_ptr<MarkerPublisher> publisher) : Node("game_runner"), snake(5,5), snakeGrid(15) {
+	GameNode(std::shared_ptr<MarkerPublisher> publisher) : Node("game_node"), snake(5,5), snakeGrid(15) {
 		snake.SetDirection(Snake::RIGHT);
-		this->renderTimer = this->create_wall_timer(80ms, std::bind(&GameNode::Loop, this));
+
+		this->declare_parameter<int>("game_fps", 12);
+		this->SetGameFPS(get_parameter("game_fps").as_int());
+
+		// Handle parameter changes
+		paramSubscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
+		gameFPSHandle = paramSubscriber->add_parameter_callback("game_fps", std::bind(&GameNode::OnGameFPSChange, this, std::placeholders::_1));
+
 		this->inputTimer = this->create_wall_timer(10ms, std::bind(&GameNode::UserInput, this));
 		this->publisher = publisher;
 
@@ -397,9 +415,13 @@ public:
 private:
 	Snake snake;
 	SnakeGrid snakeGrid;
-	rclcpp::TimerBase::SharedPtr renderTimer, inputTimer;
 	std::shared_ptr<MarkerPublisher> publisher;
 	FruitManager fruitManager;
+
+
+	rclcpp::TimerBase::SharedPtr renderTimer, inputTimer;
+	std::shared_ptr<rclcpp::ParameterEventHandler> paramSubscriber;
+	std::shared_ptr<rclcpp::ParameterCallbackHandle> gameFPSHandle;
 };
 
 #endif
