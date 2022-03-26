@@ -320,6 +320,7 @@ public:
 		p.x = x;
 		p.y = y;
 		body.push_front(p);
+		dead = false;
 
 		currentDirection = RIGHT;
 	}
@@ -388,6 +389,8 @@ public:
 				snake.SetDirection(Snake::DOWN);
 			if(c == 'd' && currentDirection != Snake::LEFT)
 				snake.SetDirection(Snake::RIGHT);
+			if(c == '\n') 
+				snake.Respawn(5,5);
 		}
 	}
 

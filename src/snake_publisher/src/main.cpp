@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
 	cbreak();
 	clear();
 
-	printw("Press WASD to control the snake.");
+	printw("Press WASD to control the snake. Use ENTER to respawn.");
 	refresh();
 
 	auto executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
