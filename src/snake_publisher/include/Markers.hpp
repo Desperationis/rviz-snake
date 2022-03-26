@@ -79,7 +79,7 @@ public:
 class MarkerPublisher : public rclcpp::Node {
 public:
 	MarkerPublisher() : Node("marker_publisher") {
-			publisher = this->create_publisher<visualization_msgs::msg::Marker>("visualization_marker", 0);
+			publisher = this->create_publisher<visualization_msgs::msg::Marker>("visualization_marker", 1);
 	}
 
 	/**
