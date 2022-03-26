@@ -23,6 +23,7 @@ void TermCleanUp(int signum) {
 }
 
 int main(int argc, char** argv) {
+	// Clean up on CTRL+C
 	std::signal(SIGINT, TermCleanUp);
 	srand(time(0));
 
@@ -30,6 +31,7 @@ int main(int argc, char** argv) {
 	auto node = std::make_shared<MarkerPublisher>();
 	auto game = std::make_shared<GameNode>(node);
 
+	// Set up ncurses to take input as fast as possible without echo
 	initscr();
 	noecho();
     nodelay(stdscr, TRUE);
@@ -37,12 +39,14 @@ int main(int argc, char** argv) {
 	cbreak();
 	clear();
 
+	// Prompt
 	printw("Press WASD to control the snake. Use ENTER to respawn.");
 	refresh();
 
+	// Run the nodes 
 	auto executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
-	executor->add_node(node);
-	executor->add_node(game);
+	executor->add_node(node); // Publisher for rviz2
+	executor->add_node(game); // Game
 	executor->spin();
 
 	endwin();
