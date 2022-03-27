@@ -29,6 +29,16 @@ using namespace std::chrono_literals;
 
 
 /**
+ * Details the color of each game piece.
+*/ 
+struct GamePieceColors {
+	std_msgs::msg::ColorRGBA snakeColor;
+	std_msgs::msg::ColorRGBA fruitColor;
+	std_msgs::msg::ColorRGBA gridColor;
+};
+
+
+/**
  * Wrapper for GridMarker so that origin is at the topleft, x-axis is positive
  * to the right, y-axis is positive downwards, and the grid is drawn. This is
  * where points are turned into cubes.
@@ -106,22 +116,24 @@ public:
 	 * specific cube based on its type. For SNAKE and FRUIT, the square is
 	 * elevated by 1 unit in order to give the apperance of 3D.
 	*/ 
-	void Draw(std::shared_ptr<MarkerPublisher> publisher) {
+	void Draw(std::shared_ptr<MarkerPublisher> publisher, GamePieceColors colors) {
 		GridMarker grid;
 		for(size_t i = 0; i < gridElements.size(); i++) {
 			for(size_t j = 0; j < gridElements[i].size(); j++) {
 				GRID_PIECES type = gridElements[i][j];
 				Cube cube;
 				cube.SetPos(i + worldXOffset, j + worldYOffset, 1); 
+				
 				switch(type) {
 				case EMPTY:
 					cube.SetPos(i + worldXOffset, j + worldYOffset, 0); 
+					cube.color = colors.gridColor;
 					break;
 				case SNAKE:
-					cube.SetColor(0, 1, 0, 1);
+					cube.color = colors.snakeColor;
 					break;
 				case FRUIT:
-					cube.SetColor(1, 0, 0, 1);
+					cube.color = colors.fruitColor;
 					break;
 				};
 
@@ -370,8 +382,20 @@ public:
 	GameNode(std::shared_ptr<MarkerPublisher> publisher) : Node("game_node"), snake(5,5), snakeGrid(15) {
 		snake.SetDirection(Snake::RIGHT);
 
-		this->declare_parameter<int>("game_fps", 12);
-		this->declare_parameter<int>("input_fps", 100);
+		this->declare_parameter("game_fps", 12);
+		this->declare_parameter("input_fps", 100);
+
+		this->declare_parameter("snake_color_r", 0);
+		this->declare_parameter("snake_color_g", 255);
+		this->declare_parameter("snake_color_b", 0);
+
+		this->declare_parameter("fruit_color_r", 255);
+		this->declare_parameter("fruit_color_g", 0);
+		this->declare_parameter("fruit_color_b", 0);
+
+		this->declare_parameter("grid_color_r", 255);
+		this->declare_parameter("grid_color_g", 255);
+		this->declare_parameter("grid_color_b", 255);
 
 		this->SetGameFPS(get_parameter("game_fps").as_int());
 		this->SetInputFPS(get_parameter("input_fps").as_int());
@@ -401,7 +425,7 @@ public:
 			snakeGrid.ReserveFruit(fruit.p.x, fruit.p.y);
 		}
 
-		snakeGrid.Draw(publisher);
+		snakeGrid.Draw(publisher, GetColors());
 		snakeGrid.Clear();
 	}
 
@@ -423,6 +447,26 @@ public:
 			if(c == '\n') 
 				snake.Respawn(5,5);
 		}
+	}
+
+	GamePieceColors GetColors() {
+		GamePieceColors colors;
+		colors.snakeColor.r = this->get_parameter("snake_color_r").as_int() / 255;
+		colors.snakeColor.g = this->get_parameter("snake_color_g").as_int() / 255;
+		colors.snakeColor.b = this->get_parameter("snake_color_b").as_int() / 255;
+		colors.snakeColor.a = 1;
+		
+		colors.gridColor.r = this->get_parameter("grid_color_r").as_int() / 255;
+		colors.gridColor.g = this->get_parameter("grid_color_g").as_int() / 255;
+		colors.gridColor.b = this->get_parameter("grid_color_b").as_int() / 255;
+		colors.gridColor.a = 1;
+
+		colors.fruitColor.r = this->get_parameter("fruit_color_r").as_int() / 255;
+		colors.fruitColor.g = this->get_parameter("fruit_color_g").as_int() / 255;
+		colors.fruitColor.b = this->get_parameter("fruit_color_b").as_int() / 255;
+		colors.fruitColor.a = 1;
+
+		return colors;
 	}
 
 private:
