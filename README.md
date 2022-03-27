@@ -27,4 +27,4 @@ Currently, the following node parameters are implemented:
 ## Limitations / Bugs
 1. No launch file is provided (I could make one in the future)
 2. Game will crash if you are good enough to fill up the entire board.
-3. After awhile, messages will slowly be delayed by a noticable amount; Simply restart rviz2. 
+3. After awhile, messages will slowly be delayed by a noticable amount; Simply restart rviz2 OR turn off and on the Marker display (don't ask me why this works)
