@@ -16,6 +16,14 @@ Firstly, [source your ros2 installation](https://docs.ros.org/en/galactic/Tutori
 
 With that, the game should run. Input is taken at the terminal where `ros2 run` was run.
 
+## Configuring
+Currently, the following node parameters are implemented:
+* `game_fps` - Rate at which the game updates.
+* `input_fps` - Rate at which input is processed from the queue.
+* `snake_color_*` - Color of the snake in its RGB components. 
+* `fruit_color_*` - Color of the fruit in its RGB components. 
+* `grid_color_*` - Color of the grid in its RGB components. 
+
 ## Limitations / Bugs
 1. No launch file is provided (I could make one in the future)
 2. Game will crash if you are good enough to fill up the entire board.
