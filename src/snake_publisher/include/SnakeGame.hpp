@@ -350,10 +350,20 @@ private:
 		SetGameFPS(p.as_int());
 	}
 
+	void OnInputFPSChange(const rclcpp::Parameter& p) {
+		SetInputFPS(p.as_int());
+	}
+
 	void SetGameFPS(int FPS) {
 		int millisecondsToDelay = static_cast<int>(1000.0 / FPS);
 		auto duration = std::chrono::duration<int, std::milli>(millisecondsToDelay);
 		this->renderTimer = this->create_wall_timer(duration, std::bind(&GameNode::Loop, this));
+	}
+
+	void SetInputFPS(int FPS) {
+		int millisecondsToDelay = static_cast<int>(1000.0 / FPS);
+		auto duration = std::chrono::duration<int, std::milli>(millisecondsToDelay);
+		this->inputTimer = this->create_wall_timer(duration, std::bind(&GameNode::UserInput, this));
 	}
 
 public:
@@ -361,13 +371,16 @@ public:
 		snake.SetDirection(Snake::RIGHT);
 
 		this->declare_parameter<int>("game_fps", 12);
+		this->declare_parameter<int>("input_fps", 100);
+
 		this->SetGameFPS(get_parameter("game_fps").as_int());
+		this->SetInputFPS(get_parameter("input_fps").as_int());
 
 		// Handle parameter changes
 		paramSubscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
 		gameFPSHandle = paramSubscriber->add_parameter_callback("game_fps", std::bind(&GameNode::OnGameFPSChange, this, std::placeholders::_1));
+		inputFPSHandle = paramSubscriber->add_parameter_callback("input_fps", std::bind(&GameNode::OnInputFPSChange, this, std::placeholders::_1));
 
-		this->inputTimer = this->create_wall_timer(10ms, std::bind(&GameNode::UserInput, this));
 		this->publisher = publisher;
 
 		fruitManager.RequestFruit();
@@ -422,6 +435,7 @@ private:
 	rclcpp::TimerBase::SharedPtr renderTimer, inputTimer;
 	std::shared_ptr<rclcpp::ParameterEventHandler> paramSubscriber;
 	std::shared_ptr<rclcpp::ParameterCallbackHandle> gameFPSHandle;
+	std::shared_ptr<rclcpp::ParameterCallbackHandle> inputFPSHandle;
 };
 
 #endif
